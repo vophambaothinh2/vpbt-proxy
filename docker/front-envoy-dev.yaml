@@ -99,11 +99,14 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
               common_tls_context:
                 tls_certificates:
-                  - certificate_chain:
-                      filename: "/etc/envoy/ssl/apicert.pem"
-                    private_key:
-                      filename: "/etc/envoy/ssl/apicert.key"
-                alpn_protocols: [ "h2", "http/1.1" ] # Enable HTTP/2
+                - certificate_chain:
+                    filename: "/etc/envoy/ssl/vpbt-server_2025.crt" # server certificate
+                  private_key:
+                    filename: "/etc/envoy/ssl/vpbt-server_2025.key" # server key
+                validation_context:
+                  trusted_ca:
+                    filename: "/etc/envoy/ssl/vpbt-ca_2025.crt" 
+              require_client_certificate: true
 
   clusters:
     - name: mqtt5_mqtt_clr
