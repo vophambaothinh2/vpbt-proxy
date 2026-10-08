@@ -55,6 +55,24 @@ static_resources:
                 route_config:
                   name: local_route
                   virtual_hosts:
+                    - name: mqtt2_handler
+                      domains:
+                        - "iot2.vophambaothinh.com:60000"
+                        - "iot2.vophambaothinh.com"
+                      routes:
+                        - match:
+                            prefix: "/mqtt"
+                          route:
+                            cluster: mqtt5_mqtts_clr
+                            timeout: 0s # Disable the 15s default timeout
+
+                      cors:
+                        allow_origin_string_match:
+                          - prefix: "*"
+                        allow_methods: GET, PUT, DELETE, POST, OPTIONS, PRI
+                        allow_headers: keep-alive,user-agent,cache-control,content-type,authorization,content-transfer-encoding,custom-header-1,x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,x-grpc-web,grpc-timeout
+                        max_age: "1728000"
+                        expose_headers: custom-header-1,grpc-status,grpc-message
 
                     - name: mqtt_handler
                       domains:
@@ -109,6 +127,22 @@ static_resources:
               require_client_certificate: true
 
   clusters:
+
+    - name: mqtt5_mqtts_clr
+      connect_timeout: 0.25s
+      per_connection_buffer_limit_bytes: 32768 # 32 KiB
+      type: strict_dns
+      lb_policy: round_robin
+      load_assignment:
+        cluster_name: mqtt5_mqtts_clr
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: mqtt-wrapper-service
+                      port_value: 8883
+
     - name: mqtt5_mqtt_clr
       connect_timeout: 0.25s
       per_connection_buffer_limit_bytes: 32768 # 32 KiB
@@ -123,6 +157,7 @@ static_resources:
                     socket_address:
                       address: mqtt-wrapper-service
                       port_value: 1883
+
     - name: mqtt5_ws_clr
       connect_timeout: 0.25s
       per_connection_buffer_limit_bytes: 32768 # 32 KiB
@@ -137,47 +172,3 @@ static_resources:
                     socket_address:
                       address: mqtt-wrapper-service
                       port_value: 8083
-
-# preserved
-#    - name: techx_iot_service_clr
-#      type: logical_dns
-#      lb_policy: round_robin
-#      http2_protocol_options: { }
-#      connect_timeout: 10s
-#      load_assignment:
-#        cluster_name: techx_iot_service_clr
-#        endpoints:
-#          - lb_endpoints:
-#              - endpoint:
-#                  address:
-#                    socket_address:
-#                      address: techx-iot-service
-#                      port_value: 59010
-#
-#    - name: web_user_clr
-#      connect_timeout: 10s
-#      type: logical_dns
-#      lb_policy: round_robin
-#      load_assignment:
-#        cluster_name: web_user_clr
-#        endpoints:
-#          - lb_endpoints:
-#              - endpoint:
-#                  address:
-#                    socket_address:
-#                      address: user-web-client
-#                      port_value: 80
-#    # Web Client
-#    - name: web_clr
-#      connect_timeout: 10s
-#      type: logical_dns
-#      lb_policy: round_robin
-#      load_assignment:
-#        cluster_name: web_clr
-#        endpoints:
-#          - lb_endpoints:
-#              - endpoint:
-#                  address:
-#                    socket_address:
-#                      address: admin-web-client
-#                      port_value: 80
