@@ -1,0 +1,12 @@
+FROM envoyproxy/envoy:v1.19.0
+
+COPY ./docker/front-envoy-dev.yaml /etc/front-envoy.yaml
+COPY ./docker/ssl/feature/result-cert.pem /etc/envoy/ssl/cert.pem
+COPY ./docker/ssl/feature/result-key.pem /etc/envoy/ssl/private.pem
+
+# RUN apt-get update && apt-get install gettext -y
+
+CMD ["/usr/local/bin/envoy", "-c", "/etc/front-envoy.yaml", "--service-cluster", "front-proxy","--log-level", "info"]
+
+# openssl
+# openssl req -x509 -newkey rsa:4096 -sha256 -days 3650  -nodes -keyout result-key.pem -out result-cert.pem -subj "/CN=vophambaothinh.com"   -addext "subjectAltName=DNS:techbot.app,DNS:*.techbot.app,IP:103.74.119.56"

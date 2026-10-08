@@ -1,0 +1,57 @@
+name: Feature Deploy
+
+on:
+  pull_request:
+    branches:
+      - feature
+env:
+  IMAGE: asia-southeast1-docker.pkg.dev/ptn-pj/demo-build
+  SC_PATH: /usr/local/app/ptn-pj-scripts/run_vpbt-proxy.sh
+  TAG: vpbt-proxy
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Make Env
+      id: env
+      run: |
+        DOCKER_TAG=$TAG-`date "+%Y%m%d-%H%M%S"`-feature
+        echo docker_tag=$DOCKER_TAG >> $GITHUB_OUTPUT
+        echo docker_image=$IMAGE/$DOCKER_TAG >> $GITHUB_OUTPUT
+        echo script_path=$SC_PATH >> $GITHUB_OUTPUT
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Docker Login
+      env:
+        TOKEN: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+      run: |
+        echo $TOKEN |docker login -u _json_key --password-stdin https://asia-southeast1-docker.pkg.dev
+
+    - name: Docker Build and Push using Dockerfile
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: docker/Dockerfile.feature
+        push: true
+        tags: ${{ steps.env.outputs.docker_image }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+    - name: Executing remote ssh
+      env:
+        ACCESS_KEY: ${{ secrets.VM_SSH_ACCESS_KEY }}
+      run: |
+        mkdir -p /home/runner/.ssh/
+        echo -e "$ACCESS_KEY"> /home/runner/.ssh/id_rsa
+        chmod 600 /home/runner/.ssh/id_rsa
+        ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${{ secrets.VM_USERNAME }} -p ${{ secrets.VM_PORT }} ${{ secrets.VM_HOST }} sudo -i bash ${{ steps.env.outputs.script_path }} ${{ steps.env.outputs.docker_image }}
+
+

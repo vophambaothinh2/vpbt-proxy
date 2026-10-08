@@ -1,0 +1,19 @@
+version: '3.3'
+
+services:
+  vpbt-proxy:
+    container_name: vpbt-proxy
+    environment:
+      DOCKER_DEFAULT_PLATFORM: linux/amd64
+    image: vpbt-proxy:beta
+    build:
+      context: ""
+      dockerfile: Dockerfile
+    ports:
+      - '60000:60000'
+    networks:
+      - demo-bridge
+
+networks:
+  demo-bridge:
+    external: true
